@@ -5,11 +5,14 @@ var c, ctx;
 var cellWidth;
 var cellHeight;
 
-var backgroundColor = '#282828'; // Color of inactive cells
-var foregroundColor = '#111111'; // Color of active cells
-var gridColor = '#3c3836'; // Color of dividing lines
-var textColor = '#ebdbb2'; // Color of grid cell text
-var cursorColor = '#a89984';
+var playing = false;
+
+var color = {
+    bg1: '#282828',
+    bg2: '#32302f',
+    grid: '#3c3836',
+    fg: '#fbf1c7',
+}
 
 var offset = 2;
 
@@ -49,7 +52,7 @@ function setCanvasSize() {
 
 window.onload = function() {
 
-    grid = new Grid(50, 25);
+    grid = new Grid(48, 25);
 
     var values = [
         audio.NOTES.C2,
@@ -86,18 +89,25 @@ window.onload = function() {
     c = document.getElementById('canvas');
     ctx = c.getContext('2d');
 
-    document.addEventListener('click', function(e) {
-        pos = mouseToGrid(e);
-        grid.set(pos.x, pos.y, (grid.get(pos.x, pos.y) === 0 ? 1 : 0));
-    });
-
-    document.addEventListener('keydown', play);
+    document.addEventListener('click', handleMouse);
+    document.addEventListener('keydown', handleKeyboard);
 
     setCanvasSize();
 
     window.addEventListener("resize", setCanvasSize, false);
 
     requestAnimationFrame(draw);
+}
+
+function handleMouse(e) {
+    pos = mouseToGrid(e);
+    grid.set(pos.x, pos.y, (grid.get(pos.x, pos.y) === 0 ? 1 : 0));
+}
+
+function handleKeyboard(e) {
+    if (e.keyCode === 32) { // space
+        play();
+    }
 }
 
 function play() {
@@ -115,10 +125,12 @@ function play() {
  * Runs once every frame.
  */
 function draw() {
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, c.width, c.height);
+    for (var x = 0; x < Math.floor(grid.width / 8); x++) {
+        ctx.fillStyle = (x % 2 === 0 ? color.bg1 : color.bg2);
+        ctx.fillRect(x * cellWidth * 8, 0, (x + 8) * cellWidth * 8, c.height);
+    }
 
-    ctx.strokeStyle = gridColor;
+    ctx.strokeStyle = color.grid;
     ctx.beginPath();
     for (var x = 0; x < grid.width; x++) {
         ctx.moveTo(x * cellWidth, 0);
@@ -147,7 +159,7 @@ function drawCell(pos, val) {
         var piece_x = x * cellWidth;
         var piece_y = y * cellHeight;
 
-        ctx.fillStyle = foregroundColor;
+        ctx.fillStyle = color.fg;
         ctx.fillRect(piece_x, piece_y, cellWidth, cellHeight);
     }
 }
