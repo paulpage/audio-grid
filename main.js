@@ -133,7 +133,7 @@ window.onload = function() {
 }
 
 function handleMouse(e) {
-    pos = mouseToGrid(e);
+    pos = mouseToGrid(e, grid, renderer);
     grid.set(pos.x, pos.y, (grid.get(pos.x, pos.y) === 0 ? 1 : 0));
 }
 
@@ -165,11 +165,11 @@ function reset() {
 /**
  * Translates mouse coordinates into grid coordinates
  */
-function mouseToGrid(evt) {
+function mouseToGrid(evt, grid, renderer) {
     var rect = c.getBoundingClientRect();
 
     return {
-        x: Math.floor((evt.clientX - rect.left) / cellWidth),
-        y: Math.floor((evt.clientY - rect.top)  / cellHeight)
+        x: Math.floor((evt.clientX - rect.left - renderer.x) / (renderer.width / grid.width)),
+        y: Math.floor((evt.clientY - rect.top - renderer.y)  / (renderer.height / grid.height))
     }
 }
