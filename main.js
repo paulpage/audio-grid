@@ -7,13 +7,6 @@ var cellHeight;
 
 var playing = false;
 
-var color = {
-    bg1: '#282828',
-    bg2: '#32302f',
-    grid: '#3c3836',
-    fg: '#fbf1c7',
-}
-
 var offset = 2;
 
 class Grid {
@@ -35,64 +28,104 @@ class Grid {
     }
 }
 
+/**
+ * Responsible for displaying a grid in a given area of the canvas
+ * with the given colors
+ */
+class GridRenderer {
+    constructor(x, y, width, height, color) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.color = color;
+    }
+
+    draw(ctx, grid) {
+
+        var cellWidth = this.width / grid.width;
+        var cellHeight = this.height / grid.height;
+
+        // Draw the striped background
+        for (var x = 0; x < Math.floor(grid.width / this.color.stripe); x++) {
+            ctx.fillStyle = (x % 2 === 0 ? this.color.bg1 : this.color.bg2);
+            ctx.fillRect(
+                this.x + x * cellWidth * this.color.stripe,
+                this.y,
+                cellWidth * this.color.stripe,
+                // (this.color.stripe) * cellWidth * this.color.stripe,
+                this.height);
+        }
+
+        // Draw grid lines
+        ctx.strokeStyle = this.color.grid;
+        ctx.beginPath;
+        for (var x = 0; x < grid.width; x++) {
+            ctx.moveTo(this.x + Math.floor(x * cellWidth), this.y);
+            ctx.lineTo(Math.floor(this.x + x * cellWidth), this.y + this.height);
+        }
+        for (var y = 0; y < grid.height; y++) {
+            ctx.moveTo(this.x, Math.floor(this.y + y * cellHeight));
+            ctx.lineTo(this.x + this.width, Math.floor(this.y + y * cellHeight));
+        }
+        ctx.stroke();
+
+        // Draw active cells
+        ctx.fillStyle = this.color.fg;
+        for (var i = 0; i < grid.data.length; i++) {
+            if (grid.data[i] != 0) {
+                var x = (i % grid.width) * cellWidth;
+                var y = Math.floor(i / grid.width) * cellHeight;
+
+                ctx.fillRect(this.x + x, this.y + y, cellWidth, cellHeight);
+            }
+        }
+    }
+}
+
 var grid;
+var renderer;
 var notes = [];
+var values = audio.range.chromatic(audio.note('Ab', 3), 25);
 
 var cursorPos = 0;
+
+var color = {
+    bg1: '#282828',  // Primary background
+    bg2: '#32302f',  // Secondary background
+    grid: '#3c3836', // Color of the gridlines
+    fg: '#fbf1c7',   // Foreground (active squares)
+    stripe: 8 // Every 8 columns switch between bg1 and bg2
+}
+    
 
 /**
  * Automatically set the optimum canvas size based on window width and height
  */
 function setCanvasSize() {
-    c.width = window.innerWidth * 0.98;
-    cellWidth = c.width / grid.width;
-    cellHeight = cellWidth;
-    c.height = grid.height * cellHeight;
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+    renderer = new GridRenderer(100, 100, c.width - 200, c.height - 200, color);
 }
 
 window.onload = function() {
 
-    grid = new Grid(48, 25);
-
-    var values = [
-        audio.NOTES.C2,
-        audio.NOTES.Cs2,
-        audio.NOTES.D2,
-        audio.NOTES.Ds2,
-        audio.NOTES.E2,
-        audio.NOTES.F2,
-        audio.NOTES.Fs2,
-        audio.NOTES.G2,
-        audio.NOTES.Gs2,
-        audio.NOTES.A2,
-        audio.NOTES.As2,
-        audio.NOTES.B2,
-        audio.NOTES.C3,
-        audio.NOTES.Cs3,
-        audio.NOTES.D3,
-        audio.NOTES.Ds3,
-        audio.NOTES.E3,
-        audio.NOTES.F3,
-        audio.NOTES.Fs3,
-        audio.NOTES.G3,
-        audio.NOTES.Gs3,
-        audio.NOTES.A3,
-        audio.NOTES.As3,
-        audio.NOTES.B3,
-        audio.NOTES.C4,
-    ];
-
-    for (var i = 0; i < grid.height; i++) {
-        notes.push(new Note(values[i % values.length]));
-    }
-
     c = document.getElementById('canvas');
     ctx = c.getContext('2d');
 
+    setCanvasSize();
+    grid = new Grid(48, 25);
+
+    for (var i = 0; i < grid.height; i++) {
+        notes.push(new Pitch(values[i % values.length]));
+    }
+
+    for (var i = 0; i < 25; i++) {
+        grid.set(i, i, 1);
+    }
+
     document.addEventListener('click', handleMouse);
     document.addEventListener('keydown', handleKeyboard);
-
-    setCanvasSize();
 
     window.addEventListener("resize", setCanvasSize, false);
 
@@ -114,54 +147,19 @@ function play() {
     for (var x = 0; x < grid.width; x++) {
         for (var y = 0; y < grid.height; y++) {
             if (grid.get(x, y) === 1) {
-                notes[notes.length - y - 1].play(x * 0.2, 0.5, audio.WAVES.triangle);
+                notes[notes.length - y - 1].play(x * 0.2, 0.5, audio.wave.triangle);
             }
         }
     }
 }
 
-/**
- * Draw the grid.
- * Runs once every frame.
- */
 function draw() {
-    for (var x = 0; x < Math.floor(grid.width / 8); x++) {
-        ctx.fillStyle = (x % 2 === 0 ? color.bg1 : color.bg2);
-        ctx.fillRect(x * cellWidth * 8, 0, (x + 8) * cellWidth * 8, c.height);
-    }
-
-    ctx.strokeStyle = color.grid;
-    ctx.beginPath();
-    for (var x = 0; x < grid.width; x++) {
-        ctx.moveTo(x * cellWidth, 0);
-        ctx.lineTo(x * cellWidth, c.height);
-    }
-    for (var y = 0; y < grid.height; y++) {
-        ctx.moveTo(0, y * cellHeight);
-        ctx.lineTo(c.width, y * cellHeight);
-    }
-    ctx.stroke();
-
-    for (var i = 0; i < grid.data.length; i++) {
-        drawCell(i, grid.data[i]);
-    }
+    renderer.draw(ctx, grid);
     requestAnimationFrame(draw);
 }
 
-/**
- * Draw each individual cell
- */
-function drawCell(pos, val) {
-    if (val != 0) {
-        var x = pos % grid.width;
-        var y = (pos - pos % grid.width) / grid.width;
-
-        var piece_x = x * cellWidth;
-        var piece_y = y * cellHeight;
-
-        ctx.fillStyle = color.fg;
-        ctx.fillRect(piece_x, piece_y, cellWidth, cellHeight);
-    }
+function reset() {
+    grid = new Grid(48, 25);
 }
 
 /**
