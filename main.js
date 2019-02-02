@@ -1,13 +1,7 @@
 // Canvas DOM object and drawing context
-var c, ctx;
-
-// Size of each cell (set automatically)
-var cellWidth;
-var cellHeight;
+var c, context;
 
 var playing = false;
-
-var offset = 2;
 
 class Grid {
     constructor(width, height) {
@@ -47,13 +41,12 @@ class GridRenderer {
         var cellHeight = this.height / grid.height;
 
         // Draw the striped background
-        for (var x = 0; x < Math.floor(grid.width / this.color.stripe); x++) {
+        for (var x = 0; x < (grid.width / this.color.stripe); x++) {
             ctx.fillStyle = (x % 2 === 0 ? this.color.bg1 : this.color.bg2);
             ctx.fillRect(
                 this.x + x * cellWidth * this.color.stripe,
                 this.y,
                 cellWidth * this.color.stripe,
-                // (this.color.stripe) * cellWidth * this.color.stripe,
                 this.height);
         }
 
@@ -61,12 +54,12 @@ class GridRenderer {
         ctx.strokeStyle = this.color.grid;
         ctx.beginPath;
         for (var x = 0; x < grid.width; x++) {
-            ctx.moveTo(this.x + Math.floor(x * cellWidth), this.y);
-            ctx.lineTo(Math.floor(this.x + x * cellWidth), this.y + this.height);
+            ctx.moveTo(this.x + (x * cellWidth), this.y);
+            ctx.lineTo((this.x + x * cellWidth), this.y + this.height);
         }
         for (var y = 0; y < grid.height; y++) {
-            ctx.moveTo(this.x, Math.floor(this.y + y * cellHeight));
-            ctx.lineTo(this.x + this.width, Math.floor(this.y + y * cellHeight));
+            ctx.moveTo(this.x, (this.y + y * cellHeight));
+            ctx.lineTo(this.x + this.width, (this.y + y * cellHeight));
         }
         ctx.stroke();
 
@@ -76,8 +69,7 @@ class GridRenderer {
             if (grid.data[i] != 0) {
                 var x = (i % grid.width) * cellWidth;
                 var y = Math.floor(i / grid.width) * cellHeight;
-
-                ctx.fillRect(this.x + x, this.y + y, cellWidth, cellHeight);
+                ctx.fillRect(this.x + x + 1, this.y + y + 1, cellWidth - 2, cellHeight - 2);
             }
         }
     }
@@ -111,7 +103,7 @@ function setCanvasSize() {
 window.onload = function() {
 
     c = document.getElementById('canvas');
-    ctx = c.getContext('2d');
+    context = c.getContext('2d');
 
     setCanvasSize();
     grid = new Grid(48, 25);
@@ -124,7 +116,7 @@ window.onload = function() {
         grid.set(i, i, 1);
     }
 
-    document.addEventListener('click', handleMouse);
+    document.addEventListener('mousedown', handleMouse);
     document.addEventListener('keydown', handleKeyboard);
 
     window.addEventListener("resize", setCanvasSize, false);
@@ -154,7 +146,12 @@ function play() {
 }
 
 function draw() {
-    renderer.draw(ctx, grid);
+    var dummy_canvas = document.createElement('canvas');  
+    dummy_canvas.width = c.width;
+    dummy_canvas.height = c.height;
+    var dummy_context = dummy_canvas.getContext('2d');
+    renderer.draw(dummy_context, grid);
+    context.drawImage(dummy_canvas, 0, 0);
     requestAnimationFrame(draw);
 }
 
