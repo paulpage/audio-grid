@@ -78,7 +78,7 @@ class GridRenderer {
 var grid;
 var renderer;
 var notes = [];
-var values = audio.range.chromatic(audio.note('Ab', 3), 25);
+var values = audio.range.chromatic(audio.note('F', 3), 25);
 
 var cursorPos = 0;
 
@@ -97,7 +97,7 @@ var color = {
 function setCanvasSize() {
     c.width = window.innerWidth;
     c.height = window.innerHeight;
-    renderer = new GridRenderer(100, 100, c.width - 200, c.height - 200, color);
+    renderer = new GridRenderer(50, 100, c.width - 200, c.height - 200, color);
 }
 
 window.onload = function() {
@@ -110,10 +110,6 @@ window.onload = function() {
 
     for (var i = 0; i < grid.height; i++) {
         notes.push(new Pitch(values[i % values.length]));
-    }
-
-    for (var i = 0; i < 25; i++) {
-        grid.set(i, i, 1);
     }
 
     document.addEventListener('mousedown', handleMouse);
@@ -146,13 +142,47 @@ function play() {
 }
 
 function draw() {
+
+    // Set up an offscreen canvas to render to for better performance
     var dummy_canvas = document.createElement('canvas');  
     dummy_canvas.width = c.width;
     dummy_canvas.height = c.height;
     var dummy_context = dummy_canvas.getContext('2d');
+
+    // Render everything on the dummy canvas
     renderer.draw(dummy_context, grid);
+    drawPianoRoll(dummy_context, 0, 100, 50, c.height - 200, 25, 4);
+
+    // Render the dummy canvas onto the real canvas
     context.drawImage(dummy_canvas, 0, 0);
+
+    // Draw the next frame
     requestAnimationFrame(draw);
+}
+
+function drawPianoRoll(ctx, x, y, width, height, keys, note) {
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x, y, width, height);
+
+    var keyColors = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+
+    var keyHeight = height / keys;
+
+    for (var i = 0; i < keys; i++) {
+        var ypos = y + Math.floor(i * keyHeight);
+        ctx.moveTo(x, ypos);
+        ctx.lineTo(x + width, ypos);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = 'black';
+    var blackKeyWidth = Math.floor(width * .6);
+    for (var i = 0; i < keys; i++) {
+        if (keyColors[(i + note) % 12] === 1) {
+            ctx.fillRect(x, y + Math.floor(i * keyHeight), width, keyHeight);
+        }
+    }
 }
 
 function reset() {
